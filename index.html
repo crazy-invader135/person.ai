@@ -1,0 +1,26 @@
+<!-- Inside your <body>, add a login button -->
+<div id="auth-section" style="padding: 10px; text-align: right;">
+    <button id="login-btn" onclick="location.href='/auth/discord'">Sign in with Discord</button>
+    <span id="user-info" style="display:none;">
+        Welcome, <span id="username"></span> | <a href="/logout" style="color:white;">Logout</a>
+    </span>
+</div>
+
+<script>
+    // Check login status on page load
+    async function checkAuth() {
+        const response = await fetch('/api/user');
+        const user = await response.json();
+        
+        if (user) {
+            document.getElementById('login-btn').style.display = 'none';
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('username').innerText = user.username;
+            
+            // Now the AI knows who you are!
+            appendMessage('ai', `Welcome back, ${user.username}. I've been waiting.`);
+        }
+    }
+    
+    checkAuth();
+</script>
