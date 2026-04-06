@@ -1,26 +1,91 @@
-<!-- Inside your <body>, add a login button -->
-<div id="auth-section" style="padding: 10px; text-align: right;">
-    <button id="login-btn" onclick="location.href='/auth/discord'">Sign in with Discord</button>
-    <span id="user-info" style="display:none;">
-        Welcome, <span id="username"></span> | <a href="/logout" style="color:white;">Logout</a>
-    </span>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Person AI | Cyberpunk</title>
+    <style>
+        :root { --bg: #0f172a; --chat: #1e293b; --accent: #7c3aed; --text: #f1f5f9; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #chat-container { width: 90%; max-width: 600px; height: 85vh; background: var(--chat); border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        #header { padding: 15px; background: var(--accent); display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 10px; border-radius: 10px; line-height: 1.4; }
+        .user { align-self: flex-end; background: var(--accent); }
+        .ai { align-self: flex-start; background: #334155; }
+        #input-area { padding: 15px; display: flex; gap: 10px; background: #0f172a; }
+        input { flex: 1; padding: 10px; border-radius: 5px; border: none; background: #1e293b; color: white; }
+        button { padding: 10px; background: var(--accent); border: none; color: white; cursor: pointer; border-radius: 5px; }
+        .auth-btn { background: #5865F2; padding: 5px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="header">
+        <span>Nova AI</span>
+        <div id="auth-box">
+            <button class="auth-btn" id="login-btn" onclick="location.href='/auth/discord'">Login with Discord</button>
+            <span id="user-display" style="display:none;"><span id="username"></span> | <a href="/logout" style="color:white; font-size: 10px;">Logout</a></span>
+        </div>
+    </div>
+    <div id="messages"></div>
+    <div id="input-area">
+        <input type="text" id="userInput" placeholder="Say something...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
 </div>
 
 <script>
-    // Check login status on page load
+    const msgBox = document.getElementById('messages');
+    const input = document.getElementById('userInput');
+    let currentUser = null;
+
+    // Load Memory from LocalStorage
+    let history = JSON.parse(localStorage.getItem('chat_memory')) || [];
+
     async function checkAuth() {
-        const response = await fetch('/api/user');
-        const user = await response.json();
-        
-        if (user) {
+        const res = await fetch('/api/user');
+        currentUser = await res.json();
+        if (currentUser) {
             document.getElementById('login-btn').style.display = 'none';
-            document.getElementById('user-info').style.display = 'block';
-            document.getElementById('username').innerText = user.username;
-            
-            // Now the AI knows who you are!
-            appendMessage('ai', `Welcome back, ${user.username}. I've been waiting.`);
+            const display = document.getElementById('user-display');
+            display.style.display = 'block';
+            document.getElementById('username').innerText = currentUser.username;
         }
+        renderHistory();
     }
-    
+
+    function renderHistory() {
+        history.forEach(m => addBubble(m.role, m.content));
+    }
+
+    function addBubble(role, text) {
+        const div = document.createElement('div');
+        div.className = `msg ${role === 'user' ? 'user' : 'ai'}`;
+        div.innerText = text;
+        msgBox.appendChild(div);
+        msgBox.scrollTop = msgBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const text = input.value.trim();
+        if(!text) return;
+        addBubble('user', text);
+        history.push({role: 'user', content: text});
+        
+        // Basic AI Logic (Next step: Connect to an LLM API)
+        setTimeout(() => {
+            const reply = currentUser ? `Listen, ${currentUser.username}, I'm busy hacking the mainframe.` : "Login first if you want me to remember you.";
+            addBubble('ai', reply);
+            history.push({role: 'ai', content: reply});
+            localStorage.setItem('chat_memory', JSON.stringify(history.slice(-20)));
+        }, 600);
+        input.value = '';
+    }
+
+    input.addEventListener("keypress", (e) => { if(e.key === "Enter") sendMessage(); });
     checkAuth();
 </script>
+</body>
+</html>
